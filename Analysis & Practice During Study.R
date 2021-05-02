@@ -84,6 +84,20 @@ unique(customer.churn$Tenure.Years)
 # Remove old tenure variable
 customer.churn$tenure <- NULL
 
+# Convert Churn to "0" and "1" for logistic regression
+customer.churn$Churn <- ifelse(customer.churn$Churn == "Yes", 1, 0)
+unique(customer.churn$Churn)
+
+# Convert the rest of the character variables to factors
+customer.churn$gender <- as.factor(customer.churn$gender)
+customer.churn$Partner <- as.factor(customer.churn$Partner)
+customer.churn$Dependents <- as.factor(customer.churn$Dependents)
+customer.churn$PhoneService <- as.factor(customer.churn$PhoneService)
+customer.churn$InternetService <- as.factor(customer.churn$InternetService)
+customer.churn$Contract <- as.factor(customer.churn$Contract)
+customer.churn$PaperlessBilling <- as.factor(customer.churn$PaperlessBilling)
+customer.churn$PaymentMethod <- as.factor(customer.churn$PaymentMethod)
+
 View(customer.churn)
 
 # Export the cleaned data set to XLSX using rio package
@@ -223,48 +237,58 @@ dev.off()
 customer.churn$TotalCharges <- NULL
 
 
-# Convert character features to factors for FactoMineR MCA function to work
-customer.churn$gender <- as.factor(customer.churn$gender)
-customer.churn$Partner <- as.factor(customer.churn$Partner)
-customer.churn$Dependents <- as.factor(customer.churn$Dependents)
-customer.churn$PhoneService <- as.factor(customer.churn$PhoneService)
-customer.churn$InternetService <- as.factor(customer.churn$InternetService)
-customer.churn$Contract <- as.factor(customer.churn$Contract)
-customer.churn$PaperlessBilling <- as.factor(customer.churn$PaperlessBilling)
-customer.churn$PaymentMethod <- as.factor(customer.churn$PaymentMethod)
-customer.churn$Churn <- as.factor(customer.churn$Churn)
-
-# Data Frame without Monthly Charges
-MCAimport <- data.frame(customer.churn[,c(1:16,18,19)])
-summary(MCAimport)
-
 ### MCA Branch ####### Delete everything below???
-
-# Partition the data into training and validation sets
-Partitions <- createDataPartition(customer.churn$gender, p=0.7, list = FALSE)
-set.seed(888)
-Train <- customer.churn[Partitions,]
-Validate <- customer.churn[-Partitions,]
-
-dim(Train)
-dim(Validate)
 
 # Multiple Correspondence Analysis to select most important features
 require(FactoMineR)
 require(factoextra)
-MCAchurnMATRIX <- as.matrix(customer.churn)
+MCAchurnMATRIX <- as.matrix(Train)
 MCAchurn <- MCA(MCAchurnMATRIX, graph = FALSE)
+print(MCAchurn)
+
+# Scree plot of MCA
+fviz_eig(MCAchurn, addlabels = TRUE)
+
+
+# Scree plot of MCA
+fviz_eig(MCAchurn, addlabels = TRUE)
+
+
+
 fviz_mca_var(MCAchurn, repel = TRUE)
 
 summary(customer.churn)
 
 # Scree Plot
 
-# Create new data set to be used in Logistic Regression
+### Logistic Regression Branch ###
 
+# Partition the data into training and validation sets
+Partitions <- createDataPartition(customer.churn$gender, p=0.7, list = FALSE)
+set.seed(175)
+Train <- customer.churn[Partitions,]
+Validate <- customer.churn[-Partitions,]
 
+dim(Train)
+dim(Validate)
 
+# Logistic Regression
+log.churn <- glm(formula = Churn ~ ., family = "binomial", data = Train)
+summary(log.churn)
 
+# Logistic Model with only Significant Features at .001 level
+log.churn001 <- glm(formula = Churn ~ Tenure.Years + Contract, family = "binomial", data = Train)
+summary(log.churn001)
+
+# Anova
+anova(log.churn001, test="Chisq")
+
+# Predictive ability of model
+probabilities <- log.churn001 %>% predict(Validate, type = "response")
+churn.prediction <- ifelse(probabilities > 0.5, "Positive", "Negative")
+churn.prediction
+
+mean(churn.prediction == Validate$Churn)
 
 ### Clean Up ###
 
