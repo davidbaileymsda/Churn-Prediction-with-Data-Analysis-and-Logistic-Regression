@@ -97,6 +97,7 @@ customer.churn$InternetService <- as.factor(customer.churn$InternetService)
 customer.churn$Contract <- as.factor(customer.churn$Contract)
 customer.churn$PaperlessBilling <- as.factor(customer.churn$PaperlessBilling)
 customer.churn$PaymentMethod <- as.factor(customer.churn$PaymentMethod)
+customer.churn$Churn <- as.factor(customer.churn$Churn)
 
 View(customer.churn)
 
@@ -237,29 +238,36 @@ dev.off()
 customer.churn$TotalCharges <- NULL
 
 
-### MCA Branch ####### Delete everything below???
+### MCA Branch #######
 
 # Multiple Correspondence Analysis to select most important features
 require(FactoMineR)
 require(factoextra)
 MCAchurnMATRIX <- as.matrix(Train)
-MCAchurn <- MCA(MCAchurnMATRIX, graph = FALSE)
+MCAchurn <- MCA(Train, quanti.sup=c(17), graph = FALSE)
 print(MCAchurn)
 
+# Plot of MCA
+fviz_mca_var(MCAchurn, title = "MCA of Training Data Set", repel = TRUE)
+
 # Scree plot of MCA
 fviz_eig(MCAchurn, addlabels = TRUE)
 
+## Select Variables ## TESTING
+MCAvar <- get_mca_var(MCAchurn)
+MCAvar
 
-# Scree plot of MCA
-fviz_eig(MCAchurn, addlabels = TRUE)
+# Coordinates
+head(MCAvar$coord)
 
+# Cos2: quality on the factor map
+head(MCAvar$cos2)
 
+# Contributions to the principal components
+head(MCAvar$contrib)
 
-fviz_mca_var(MCAchurn, repel = TRUE)
+### FAMD - Factor Analysis of Mixed Data
 
-summary(customer.churn)
-
-# Scree Plot
 
 ### Logistic Regression Branch ###
 
@@ -289,6 +297,11 @@ churn.prediction <- ifelse(probabilities > 0.5, "Positive", "Negative")
 churn.prediction
 
 mean(churn.prediction == Validate$Churn)
+
+
+
+
+
 
 ### Clean Up ###
 
