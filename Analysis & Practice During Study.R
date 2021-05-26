@@ -41,9 +41,7 @@ unique(customer.churn$Churn)
 
 # Clean the needed categorical values
 customer.churn$SeniorCitizen <- as.factor(mapvalues(customer.churn$SeniorCitizen, from = c("1", "0"), to = c("Yes", "No")))
-
 customer.churn$MultipleLines <- as.factor(mapvalues(customer.churn$MultipleLines, from = c("No phone service"), to = c("No")))
-
 customer.churn$OnlineSecurity <- as.factor(mapvalues(customer.churn$OnlineSecurity, from = c("No internet service"), to = c("No")))
 customer.churn$OnlineBackup <- as.factor(mapvalues(customer.churn$OnlineBackup, from = c("No internet service"), to = c("No")))
 customer.churn$DeviceProtection <- as.factor(mapvalues(customer.churn$DeviceProtection, from = c("No internet service"), to = c("No")))
@@ -81,12 +79,11 @@ customer.churn$Tenure.Years <- sapply(customer.churn$tenure, Tenure.Years)
 customer.churn$Tenure.Years <- as.factor(customer.churn$Tenure.Years)
 unique(customer.churn$Tenure.Years)
 
+# Order the Tenure Factor
+customer.churn$Tenure.Years <- ordered(customer.churn$Tenure.Years, levels =c("First Year", "Second Year", "Third Year", "Fourth Year", "Fifth Year", "Sixth Year or More"))
+
 # Remove old tenure variable
 customer.churn$tenure <- NULL
-
-# Convert Churn to "0" and "1" for logistic regression
-customer.churn$Churn <- ifelse(customer.churn$Churn == "Yes", 1, 0)
-unique(customer.churn$Churn)
 
 # Convert the rest of the character variables to factors
 customer.churn$gender <- as.factor(customer.churn$gender)
@@ -187,8 +184,6 @@ B16 <- ggplot(customer.churn, aes(x = PaymentMethod)) + ggtitle("Payment Method"
   scale_y_continuous(labels = scales::percent) +
   ylab("Relative Frequency") + theme(axis.text.x = element_text(angle = 50))
 
-customer.churn$Tenure.Years <- ordered(customer.churn$Tenure.Years, levels =c("First Year", "Second Year", "Third Year", "Fourth Year", "Fifth Year", "Sixth Year or More"))
-
 B17 <- ggplot(customer.churn, aes(x = Tenure.Years)) + ggtitle("Tenure in Years") +
   geom_bar(aes(y = (..count..)/sum(..count..))) +
   scale_y_continuous(labels = scales::percent) +
@@ -243,15 +238,23 @@ customer.churn$TotalCharges <- NULL
 # Multiple Correspondence Analysis to select most important features
 require(FactoMineR)
 require(factoextra)
-MCAchurnMATRIX <- as.matrix(Train)
-MCAchurn <- MCA(Train, quanti.sup=c(17), graph = FALSE)
+MCAchurnMATRIX <- as.matrix(customer.churn)
+MCAchurn <- MCA(customer.churn, quanti.sup = 17, quali.sup = 18, graph = FALSE)
 print(MCAchurn)
 
 # Plot of MCA
-fviz_mca_var(MCAchurn, title = "MCA of Training Data Set", repel = TRUE)
+fviz_mca_var(MCAchurn, title = "MCA of Customer Churn", selectmod = "contrib20", repel = TRUE, col.var = "red", col.quanti.sup = "blue", col.quali.sup = "darkgreen")
 
 # Scree plot of MCA
 fviz_eig(MCAchurn, addlabels = TRUE)
+
+# Contribution of variable categories
+fviz_contrib(MCAchurn, choice = "var", axes = 1, top = 10)
+fviz_contrib(MCAchurn, choice = "var", axes = 2, top = 10)
+fviz_contrib(MCAchurn, choice = "var", axes = 3, top = 10)
+fviz_contrib(MCAchurn, choice = "var", axes = 4, top = 10)
+
+#Export as pngs
 
 ## Select Variables ## TESTING
 MCAvar <- get_mca_var(MCAchurn)
@@ -266,10 +269,18 @@ head(MCAvar$cos2)
 # Contributions to the principal components
 head(MCAvar$contrib)
 
-### FAMD - Factor Analysis of Mixed Data
+# Plot cos2 values with color gradient
+fviz_mca_var(MCAchurn, col.var="cos2", gradient.cols = c("#FFFF00", "#FFA500", "#FF0000"), repel = TRUE, ggtheme = theme_minimal())
+
+# Cos2 of variables
+fviz_cos2(MCAchurn, choice = "var", axes = 1:4)
 
 
 ### Logistic Regression Branch ###
+
+# Convert Churn to "0" and "1" for logistic regression
+customer.churn$Churn <- ifelse(customer.churn$Churn == "Yes", 1, 0)
+unique(customer.churn$Churn)
 
 # Partition the data into training and validation sets
 Partitions <- createDataPartition(customer.churn$gender, p=0.7, list = FALSE)
