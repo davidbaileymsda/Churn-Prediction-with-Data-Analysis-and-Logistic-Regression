@@ -299,25 +299,29 @@ summary(log.churn)
 log.churn01 <- glm(formula = Churn ~ Tenure.Years + Contract + PaperlessBilling, family = "binomial", data = Train)
 summary(log.churn01)
 
-# Logistic Model Graph
-
-
 # Anova
 anova(log.churn01, test="Chisq")
 
 # Predictive ability of model on Validation Data
 probabilities <- log.churn01 %>% predict(Validate, type = "response")
-churn.prediction <- ifelse(probabilities > 0.5, "Positive", "Negative")
+churn.prediction <- ifelse(probabilities > 0.5, "Churn", "No Churn")
 churn.prediction
 
 # Confusion Matrix from Validation Data
+churn.actual <- ifelse(Validate$Churn == 1, "Churn", "No Churn")
+churn.prediction <- as.factor(churn.prediction)
+churn.actual <- as.factor(churn.actual)
+confusionMatrix(churn.prediction, churn.actual)
 
+mean(churn.prediction == churn.actual)
 
+# ROC Curve plot
+churn.actual <- as.numeric(churn.actual)
+churn.prediction <- as.numeric(churn.prediction)
 
-mean(churn.prediction == Validate$Churn)
-
-
-
+library(pROC)
+par(pty = "s")
+roc(churn.actual, probabilities, plot = TRUE, legacy.axes = TRUE)
 
 
 
