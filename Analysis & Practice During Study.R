@@ -284,7 +284,7 @@ unique(customer.churn$Churn)
 
 # Partition the data into training and validation sets
 Partitions <- createDataPartition(customer.churn$gender, p=0.7, list = FALSE)
-set.seed(175)
+set.seed(801)
 Train <- customer.churn[Partitions,]
 Validate <- customer.churn[-Partitions,]
 
@@ -295,17 +295,24 @@ dim(Validate)
 log.churn <- glm(formula = Churn ~ ., family = "binomial", data = Train)
 summary(log.churn)
 
-# Logistic Model with only Significant Features at .001 level
-log.churn001 <- glm(formula = Churn ~ Tenure.Years + Contract, family = "binomial", data = Train)
-summary(log.churn001)
+# Logistic Model with only Significant Features at .01 level
+log.churn01 <- glm(formula = Churn ~ Tenure.Years + Contract + PaperlessBilling, family = "binomial", data = Train)
+summary(log.churn01)
+
+# Logistic Model Graph
+
 
 # Anova
-anova(log.churn001, test="Chisq")
+anova(log.churn01, test="Chisq")
 
-# Predictive ability of model
-probabilities <- log.churn001 %>% predict(Validate, type = "response")
+# Predictive ability of model on Validation Data
+probabilities <- log.churn01 %>% predict(Validate, type = "response")
 churn.prediction <- ifelse(probabilities > 0.5, "Positive", "Negative")
 churn.prediction
+
+# Confusion Matrix from Validation Data
+
+
 
 mean(churn.prediction == Validate$Churn)
 
